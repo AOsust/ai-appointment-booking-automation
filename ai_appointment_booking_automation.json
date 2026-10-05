@@ -1,0 +1,1086 @@
+{
+  "name": "Zavrsni",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# KORAK 1 — Kvalifikacija korisnika i prijedlog termina",
+        "height": 460,
+        "width": 1332
+      },
+      "id": "39351f11-3324-4e76-9646-d097a1810cfb",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "# KORAK 2 — Automatsko rezerviranje termina",
+        "height": 552,
+        "width": 1940,
+        "color": 3
+      },
+      "id": "48dfe7b9-6b5b-4d59-841c-5615a7e103a5",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        496
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.sessionId }}",
+        "contextWindowLength": 50
+      },
+      "id": "2af71200-88f6-466d-911f-0c5009011a04",
+      "name": "AI Conversation Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        464,
+        288
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=input :  {{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "=#VAŽNO\nTermini se mogu zakazati tek nakon što prikupimo ime, prezime i izabranu uslugu.\n\n#JEZIK KOMUNIKACIJE\nUvijek odgovaraj isključivo na standardnom hrvatskom jeziku.\n\n#IDENTITET\nVi ste chat asistent frizerskog salona (recepcija/zakazivanje).\n\n#KONTEKST\n\nSalon nudi šišanje i druge frizerske usluge\n\nRadno vreme: ponedeljak–petak, 09:00–18:00\n\nDanašnji datum je: {{$now}}\n\n#USLUGE I MAPPING (KRITIČNO)\n\n„Muško šišanje“ (30 min) – 20 € – Event ID: 6672561\n\n„Žensko šišanje“ (60 min) – 35 € – Event ID: 6687253\n\n„Feniranje + pranje“ (60 min) – 30 € – Event ID: 6687258\n\n„Dječje šišanje“ (20 min) - 12€ - Event ID: 6687270\n\n„Uređivanje brade“ (15 min) - 10€ - Event ID: 6687276\n\nUvijek prikaži sve moguće usluge,bez prikazivanje Event ID.\nKada korisnik izabere uslugu, zapamti odgovarajući Event ID.\n\n#TON\nDinamično, profesionalno i toplo. Bez emodžija.\n\n#TOK KONVERZACIJE\n\n1. Pozdrav\n\n„Pozdrav! Ja sam asistent frizerskog salona, tu sam da vam pomognem da zakažete termin.Kako vam mogu pomoći?“\n\n2. Izbor usluge (jedno pitanje u isto vreme)\n\na) „Koju uslugu želite zakazati?“\n\nAko korisnik kaže „ne znam“ ili „šta nudite?“ → prikaži 3 usluge (trajanje, cijena, kratka korist).\n\nU suprotnom, nastavi dalje.\n\n3. Prikupljanje podataka\n\n„Super! Da rezerviramo vaš termin za [naziv usluge], treba mi vaše ime i e-mail adresa.“\n\n→ Nakon što dobijemo ime, prezime i e-mail adresu, upiši u Google Sheet sa kolonama: Contact ID, First Name, Last Name,Email,Usluga, created_at.\n\n4. Ponuda slobodnih termina\n\n„Da li želite da vam odmah pokažem slobodne termine?“\n\nAko da:\n\nPozovi alat Get Availability sa:\n\nEvent ID izabrane usluge\n\nstartTime = sada (ISO 8601, UTC, npr. 2025-06-13T12:00:00Z)\n\nendTime = +48h (ISO 8601, UTC)\n\nmax 5 termina\n\nKonvertiraj svaki termin iz UTC vrijeme Zagreb (+01:00) i prikaži kao plain text (npr. “14:30”).\n\n5. Izbor termina\n\n„Koji od ovih termina vam odgovara?“\n\nKorisnik odgovori datum+vrijeme →\n\nPitaj: „Upišite ‘da’ da potvrdite ovaj termin.“\n\nNa „da“, upiši u Google Sheet: upiši Booking Date/time (ISO 8601) i Usluga za isti Contact ID.\n\nZatim: „Vaš termin je rezerviran za [datum] u [vreme] . Upišite ‘confirm’ da finaliziramo!“\n\nNe vraćaj se na početak.\n6. Finalna potvrda\n\nNa “confirm” →\n\nPotvrdi rezervaciju i napomeni politiku otkazivanja (najmanje 24h ranije).\n\n#OGRANIČENJA ALATA “Get Availability”\n\nUvek ISO 8601 UTC\n\nstartTime = sada, endTime = +48h\n\nMaksimum 5 termina\n\nPlain text, < 400 karaktera\n\n#OPŠTA PRAVILA\n\nJedno pitanje u isto vreme\n\nNikad ne traži ponovo info koji je već dat.I nikad ne ponavljaj jedno te isto u istoj konverzaciji.\n\n“RESET” vraća razgovor na početak"
+        }
+      },
+      "id": "65040393-b1b2-43c7-a8a4-fd45ec77eb15",
+      "name": "AI Booking Assistant",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        592,
+        64
+      ],
+      "typeVersion": 1.8
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "203719dd-4369-43fd-a08f-4b5debe5e9fc",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $json['Booking Date/time'] || '' }}",
+                    "rightValue": ""
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Nema termina"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "f4c5dc47-6cf4-43da-8fc3-7123f8a7f413",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    },
+                    "leftValue": "={{ $json['Booking Date/time'] || '' }}",
+                    "rightValue": ""
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Ima termin"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2841d376-69d1-4d87-af1b-c38be9db2672",
+      "name": "Switch: Ima termin za potvrdu?",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        256,
+        736
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { output: \"Ne vidim termin koji mogu da potvrdim. Molim vas prvo izaberite uslugu i termin, pa zatim napišite 'confirm'.\" } }];"
+      },
+      "id": "c3190fd3-8a82-4077-8d5c-ff5f0c49232b",
+      "name": "Chat odgovor: Nema termina za potvrdu",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        480,
+        592
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { output: \"Termin je uspješno rezerviran. Ako želite otkazat ili promjenit termin, javite nam se najmanje 24h unaprijed.\" } }];"
+      },
+      "id": "fc57e504-4e5e-4748-be5c-5d49b67cb5d1",
+      "name": "Chat odgovor: Termin potvrđen",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1664,
+        592
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { output: \"Izgleda da termin koji ste izabrali više nije dostupan. Molim vas izaberite drugi termin.\" } }];"
+      },
+      "id": "fe3e8278-e31e-4175-ba4c-b7d19913f68e",
+      "name": "Chat odgovor: Termin nije dostupan",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1680,
+        880
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-5-mini"
+        },
+        "options": {}
+      },
+      "id": "162da717-47fb-4d4e-a3ee-3717adf2df13",
+      "name": "Gpt5- mini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        304,
+        288
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "openAiApi": {
+          "id": "8tk7jg3D4NVNd177",
+          "name": "OpenAI account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -544,
+        544
+      ],
+      "id": "ffa6cec6-d887-40aa-ba36-bd299758ad49",
+      "name": "Početak razgovora",
+      "webhookId": "1d16af51-9f92-4c63-b0b2-683d70c4ea41"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "2b0aa9e5-7215-435b-8b66-fddb9973c7d0",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notContains"
+                    },
+                    "leftValue": "={{ ($json.chatInput || '').toLowerCase() }}",
+                    "rightValue": "confirm"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Discussion"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "ed81f2e7-f97d-4581-bc84-ed703db2ec08",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "leftValue": "={{ ($json.chatInput || '').toLowerCase() }}",
+                    "rightValue": "confirm"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Confirm booking"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "253099b8-49fe-40eb-b8e9-f5199357966a",
+      "name": "Switch: Potvrda ili Chat",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        -304,
+        544
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1S7QkNaymeikL_mMiXw7AvqRkYmROQBq_tyR1MZ3mE6Q",
+          "mode": "list",
+          "cachedResultName": "MES RDV",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1S7QkNaymeikL_mMiXw7AvqRkYmROQBq_tyR1MZ3mE6Q/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "mes RDV",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1S7QkNaymeikL_mMiXw7AvqRkYmROQBq_tyR1MZ3mE6Q/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Contact ID": "={{ $json.sessionId }}",
+            "First Name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('First_Name', `Ime korisnika. Obavezno upiši valjano ime koju je korisnik naveo.`, 'string') }}",
+            "Last Name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Last_Name', `Prezime korisnika. Obavezno upiši valjano prezime koju je korisnik naveo.`, 'string') }}",
+            "Booking Date/time": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Booking_Date_time', ``, 'string') }}",
+            "Usluga": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Usluga', ``, 'string') }}",
+            "created_at": "={{ $now }}",
+            "Email": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Email', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "Contact ID"
+          ],
+          "schema": [
+            {
+              "id": "Contact ID",
+              "displayName": "Contact ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "First Name",
+              "displayName": "First Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Last Name",
+              "displayName": "Last Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Booking Date/time",
+              "displayName": "Booking Date/time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Usluga",
+              "displayName": "Usluga",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "772cc046-12d8-4484-8ed1-735e986620bb",
+      "name": "Kreiranje korisnika u Google Sheetsu",
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "position": [
+        640,
+        288
+      ],
+      "typeVersion": 4.5,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Cn5Pnyj8FIhHcy5H",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1S7QkNaymeikL_mMiXw7AvqRkYmROQBq_tyR1MZ3mE6Q",
+          "mode": "list",
+          "cachedResultName": "MES RDV",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1S7QkNaymeikL_mMiXw7AvqRkYmROQBq_tyR1MZ3mE6Q/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "mes RDV",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1S7QkNaymeikL_mMiXw7AvqRkYmROQBq_tyR1MZ3mE6Q/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Contact ID": "={{ $json.sessionId }}",
+            "Booking Date/time": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Booking_Date_time', ``, 'string') }}",
+            "Usluga": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Usluga', ``, 'string') }}",
+            "First Name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('First_Name', ``, 'string') }}",
+            "Last Name": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Last_Name', ``, 'string') }}",
+            "row_number": 0,
+            "Email": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Email', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "Contact ID"
+          ],
+          "schema": [
+            {
+              "id": "Contact ID",
+              "displayName": "Contact ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "First Name",
+              "displayName": "First Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Last Name",
+              "displayName": "Last Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Booking Date/time",
+              "displayName": "Booking Date/time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Usluga",
+              "displayName": "Usluga",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "113b80c4-9fa3-4e9e-beba-ac60e34f8dc9",
+      "name": "Ažuriranje korisnika sa podatcima",
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "position": [
+        816,
+        288
+      ],
+      "typeVersion": 4.5,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Cn5Pnyj8FIhHcy5H",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Pozovi ovaj alat da biste preuzeli dostupnost svih termina od pocetka radnog vremena u 9:00 do kraja do 17:00 za sastanke.\nObavezno koristi vremensku zonu Zagreb.\nStrogo poštujte ISO format za datume, na primjer:\n2025-01-01T09:00:00-02:00\nPrikaži sve dostupne termine koje vrati Cal.com za traženi datum.\n\nNemoj prikazivati zauzete termine.\n.\nNemoj izmišljati termine.\n\nNemoj ograničiti rezultat na prvih 5 termina.\n\nPrikaži termine kronološki.\n\nPrikaži vrijeme u vremenskoj zoni Europe/Zagreb.\n\nAko Cal.com vrati 10 dostupnih termina, prikaži svih 10.\n\nAko nema dostupnih termina, reci korisniku da za taj datum nema slobodnih termina i ponudi drugi datum.\nCal.com vraća vremena u UTC formatu.\n\nSva vremena iz odgovora moraju se pretvoriti iz UTC u Europe/Zagreb prije prikaza korisniku.\n\nNikada korisniku nemoj prikazivati UTC vrijeme.\n\nKorisniku uvijek prikaži lokalno vrijeme u Zagrebu.\n\nPrimjer:\n2026-08-17T14:30:00.000Z = 16:30 Zagreb.\n\nPrikaži sve dostupne termine koje Cal.com vrati.\nNe uklanjaj termine koje je Cal.com označio kao dostupne.",
+        "url": "https://api.cal.com/v2/slots/available",
+        "sendQuery": true,
+        "parametersQuery": {
+          "values": [
+            {
+              "name": "eventTypeId"
+            },
+            {
+              "name": "startTime"
+            },
+            {
+              "name": "endTime"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "parametersHeaders": {
+          "values": [
+            {
+              "name": "Authorization",
+              "valueProvider": "fieldValue",
+              "value": "Bearer cal_live_808e9459305834c51092686e5b764298"
+            },
+            {
+              "name": "Content-Type",
+              "valueProvider": "fieldValue",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "id": "33e4e44a-dcf7-4d62-a659-6c8dab4d443a",
+      "name": "Dohvaćanje slobodnih termina",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "position": [
+        1024,
+        288
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1S7QkNaymeikL_mMiXw7AvqRkYmROQBq_tyR1MZ3mE6Q",
+          "mode": "list",
+          "cachedResultName": "MES RDV",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1S7QkNaymeikL_mMiXw7AvqRkYmROQBq_tyR1MZ3mE6Q/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "mes RDV",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1S7QkNaymeikL_mMiXw7AvqRkYmROQBq_tyR1MZ3mE6Q/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Contact ID",
+              "lookupValue": "={{ $json.sessionId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "50a4c8ec-774d-44d9-925a-fe0450e8871c",
+      "name": "Vraćanje podataka korisnika",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        64,
+        752
+      ],
+      "typeVersion": 4.5,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Cn5Pnyj8FIhHcy5H",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json['Booking Date/time']; \n\"2025-06-04T09:00:00+02:00\"\nfunction normalizeToUTCZFormat(dateString) {\ntry {\nif\n(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$/.test(dateString)\n) {\nreturn new Date(dateString).toISOString();\n}\nconst date = new Date(dateString);\nif (isNaN(date.getTime())) {\nthrow new Error(\"Invalid date format\");\n}\nreturn date.toISOString(); \n} catch (e) {\nreturn `Invalid input: ${e.message}`;\n}\n}\nreturn [\n{\njson: {\noriginal: input,\nnormalized: normalizeToUTCZFormat(input),\n},\n},\n];"
+      },
+      "id": "05d66377-931f-46b8-b733-17ddae28d1e6",
+      "name": "Normalizacija vremena (UTC Format)",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        464,
+        752
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.cal.com/v2/bookings",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer cal_live_808e9459305834c51092686e5b764298"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "cal-api-version",
+              "value": "2024-08-13"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"eventTypeId\": {{\n    (() => {\n      const service = ($('Vraćanje podataka korisnika').item.json['Usluga'] || '')\n        .toString()\n        .trim()\n        .toLowerCase();\n\n      const eventTypes = {\n        'muško šišanje': 6672561,\n        'žensko šišanje': 6687253,\n        'feniranje + pranje': 6687258,\n        'dječje šišanje': 6687270,\n        'uređivanje brade': 6687276\n    };\n\n    return eventTypes[service];\n  })()\n}},\n\"start\": \"{{ $json.normalized }}\",\n\"attendee\": {\n  \"name\": \"{{ $('Vraćanje podataka korisnika').item.json['First Name'] }} {{ $('Vraćanje podataka korisnika').item.json['Last Name'] }}\",\n  \"email\": \"{{ $('Vraćanje podataka korisnika').item.json['Email'] }}\",\n  \"timeZone\": \"Europe/Zagreb\"\n},\n\"bookingFieldsResponses\": {\n  \"title\": \"{{ $('Vraćanje podataka korisnika').item.json['Usluga'] }} - {{ $('Vraćanje podataka korisnika').item.json['First Name'] }} {{ $('Vraćanje podataka korisnika').item.json['Last Name'] }}\"\n}\n}",
+        "options": {}
+      },
+      "id": "eecf31cd-1c18-48e5-a9f9-ce5d34bce196",
+      "name": "Slanje termina bookingu",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        704,
+        752
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $('Vraćanje podataka korisnika').first().json['Booking Date/time']; \nfunction formatToReadableDate(dateString) {\ntry {\nconst date = new Date(dateString);\nif (isNaN(date.getTime())) throw new Error(\"Invalid date\");\nconst options = {\ntimeZone: \"Europe/Zagreb\", \nmonth: \"long\",\nday: \"numeric\",\nhour: \"numeric\",\nminute: \"2-digit\",\nhour12: true,\n};\nconst formatted = date.toLocaleString(\"en-US\", options);\n\"June 4, 9am\"\nreturn formatted\n.replace(\":00\", \"\") \n.replace(\"AM\", \"am\")\n.replace(\"PM\", \"pm\");\n} catch (e) {\nreturn `Invalid input: ${e.message}`;\n}\n}\nreturn [\n{\njson: {\noriginal: input,\nformatted: formatToReadableDate(input),\n},\n},\n]; "
+      },
+      "id": "8f8c4ba3-da15-4799-bf80-8919af86eae0",
+      "name": "Formatiranje datuma",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        928,
+        752
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "cbf9b691-0bc1-4a14-b35d-96664d82bc91",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $('Slanje termina bookingu').item.json.status }}",
+                    "rightValue": "success"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "succeeded"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "f78214f9-ecd4-4913-aef0-9a2a453b052c",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $('Slanje termina bookingu').item.json.status }}",
+                    "rightValue": "error"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Failed"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "263d10d1-3d15-43c8-90c3-fadc6c129129",
+      "name": "Provjeri Booking status",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        1168,
+        688
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1S7QkNaymeikL_mMiXw7AvqRkYmROQBq_tyR1MZ3mE6Q",
+          "mode": "list",
+          "cachedResultName": "MES RDV",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1S7QkNaymeikL_mMiXw7AvqRkYmROQBq_tyR1MZ3mE6Q/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "mes RDV",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1S7QkNaymeikL_mMiXw7AvqRkYmROQBq_tyR1MZ3mE6Q/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Contact ID": "={{ $('Vraćanje podataka korisnika').item.json['Contact ID'] }}",
+            "Booking Date/time": "={{ $('Vraćanje podataka korisnika').item.json['Booking Date/time'] }}"
+          },
+          "matchingColumns": [
+            "Contact ID"
+          ],
+          "schema": [
+            {
+              "id": "Contact ID",
+              "displayName": "Contact ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Broj telefona ",
+              "displayName": "Broj telefona ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "First Name",
+              "displayName": "First Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Name",
+              "displayName": "Last Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Booking Date/time",
+              "displayName": "Booking Date/time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Usluga",
+              "displayName": "Usluga",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "781755dd-20b9-4ed5-bb17-fcfa0c732106",
+      "name": "Oznacavanje Bookinga sa potvrdom",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1424,
+        608
+      ],
+      "typeVersion": 4.5,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Cn5Pnyj8FIhHcy5H",
+          "name": "Google Sheets account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "AI Conversation Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Booking Assistant",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch: Ima termin za potvrdu?": {
+      "main": [
+        [
+          {
+            "node": "Chat odgovor: Nema termina za potvrdu",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Normalizacija vremena (UTC Format)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gpt5- mini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Booking Assistant",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Početak razgovora": {
+      "main": [
+        [
+          {
+            "node": "Switch: Potvrda ili Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch: Potvrda ili Chat": {
+      "main": [
+        [
+          {
+            "node": "AI Booking Assistant",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Vraćanje podataka korisnika",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kreiranje korisnika u Google Sheetsu": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Booking Assistant",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ažuriranje korisnika sa podatcima": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Booking Assistant",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dohvaćanje slobodnih termina": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Booking Assistant",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vraćanje podataka korisnika": {
+      "main": [
+        [
+          {
+            "node": "Switch: Ima termin za potvrdu?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizacija vremena (UTC Format)": {
+      "main": [
+        [
+          {
+            "node": "Slanje termina bookingu",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slanje termina bookingu": {
+      "main": [
+        [
+          {
+            "node": "Formatiranje datuma",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatiranje datuma": {
+      "main": [
+        [
+          {
+            "node": "Provjeri Booking status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Provjeri Booking status": {
+      "main": [
+        [
+          {
+            "node": "Oznacavanje Bookinga sa potvrdom",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Chat odgovor: Termin nije dostupan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Oznacavanje Bookinga sa potvrdom": {
+      "main": [
+        [
+          {
+            "node": "Chat odgovor: Termin potvrđen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "e48d404c-47a8-4bdb-bc3e-25ad060e40b8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c0c9408f3eb3c59842da4b11b06871595f71c57bdbfb7a376f9bf92a4f3d1583"
+  },
+  "nodeGroups": [],
+  "id": "HXpKyHCLFHMdddPr",
+  "tags": [
+    {
+      "updatedAt": "2025-07-09T21:41:38.773Z",
+      "createdAt": "2025-07-09T21:41:38.773Z",
+      "id": "G5Lcoe2jTgqCJuSy",
+      "name": "OpenAI"
+    },
+    {
+      "updatedAt": "2025-07-09T23:31:21.052Z",
+      "createdAt": "2025-07-09T23:31:21.052Z",
+      "id": "JXtwH1KWn3HpvHrm",
+      "name": "templates"
+    },
+    {
+      "updatedAt": "2025-07-09T23:31:21.059Z",
+      "createdAt": "2025-07-09T23:31:21.059Z",
+      "id": "giPr8wYqaJHn1OWx",
+      "name": "creator"
+    },
+    {
+      "updatedAt": "2025-07-09T21:41:38.763Z",
+      "createdAt": "2025-07-09T21:41:38.763Z",
+      "id": "pz5LfYMpyppJnoPT",
+      "name": "WooCommerce"
+    }
+  ]
+}
